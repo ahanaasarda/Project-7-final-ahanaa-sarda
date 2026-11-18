@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EYECANDY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="book.css">
+
+<!-- Book settings.
+     pageWidth / pageHeight = the size you design ONE page at, in px.
+     850 × 1100 is 8.5 × 11 in. Change both to match your InDesign / Figma page. -->
+<script>
+  window.BOOK = {
+    pageWidth: 850,
+    pageHeight: 1100,
+    fill: 1,          // 1 = as big as the screen allows, 0.9 = a bit smaller
+    tilt: 16,         // how far the book leans back, in degrees (0 = flat)
+    editButton: true  // show the Edit button (set to false when the site is finished; E still works)
+  };
+
+  /* The zines, in order. Everyone makes two zines, so each person has two folders (eyecandy, ahanaa-zine2 …).
+     Each folder has two files:
+       index.html  the zine itself (its <title> and <meta name="author"> become the caption)
+       thumb.jpg   a wide 2:1 picture, used on the moving strip and on the zine's own spread in the book
+     The title/by here are only shown until the zine's own page is read (or when you open the site from your computer).
+     See HOW-TO-ADD-YOUR-ZINE.md. */
+  window.ZINE_SLOTS = [
+    { slot: "spotify",         title: "Fall Wrapped",          by: "Andrew Kim" },
+    { slot: "tim-hortons",     title: "First Frost",           by: "Andrew Kim" },
+    { slot: "eyecandy",   title: "EYECANDY — The Merch Edit",    by: "Ahanaa Sarda" },
+    { slot: "trojan",   title: "Trojan: Fall Edition",    by: "Nanda" },
+    { slot: "autumn-receipt",   title: "Autumn Receipt",    by: "Member 1" }
+  ];
+
+</script>
+
+<style>
+  /* ===== Your page styles go here =====
+     Every page is drawn at pageWidth × pageHeight px and scaled to fit the screen,
+     so write sizes in px exactly as they are in your design file. */
+
+  /* ---- pages 4–5: zines strip ---- */
+  .zines-title{position:absolute;left:64px;top:56px;margin:0;font-size:150px;font-weight:600;line-height:.9;letter-spacing:-.045em}
+  .zines-intro{position:absolute;left:64px;top:230px;width:470px;margin:0;font-size:22px;line-height:1.4}
+  .zines-note{position:absolute;right:64px;top:64px;width:380px;margin:0;font-size:22px;line-height:1.4;text-align:right}
+  .zines-hint{position:absolute;left:64px;bottom:64px;margin:0;font-size:15px;color:var(--mute)}
+  .page zine-band{top:400px}
+  /* one spread per zine: the thumbnail runs across both pages */
+  .zine-l .zine-img,.zine-r .zine-img{position:absolute;top:150px;width:1572px;height:786px;object-fit:cover;max-width:none}
+  .zine-l .zine-img{left:64px}
+  .zine-r .zine-img{left:-786px}
+  .zine-cap{position:absolute;left:64px;top:972px;margin:0}
+  .zine-cap .zt{display:block;font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .zine-cap .zb{display:block;margin-top:8px;font-size:22px;color:var(--mute)}
+  .zine-open{position:absolute;right:64px;top:976px;font-size:22px;color:var(--ink);text-decoration:none;border:1.5px solid var(--ink);border-radius:999px;padding:10px 24px}
+  .zine-open:hover{background:var(--ink);color:var(--sheet)}
+  .page zine-count{position:absolute;right:64px;bottom:64px;font-size:15px;color:var(--mute)}
+
+  /* opened zine */
+  .zine-viewer{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:24px clamp(16px,4vw,48px);
+    border:0;background:rgba(20,20,20,.94);color:#fcfcfa;font-family:var(--font)}
+  .zine-viewer[open]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+  .zine-viewer::backdrop{background:transparent}
+  .zine-viewer figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;min-height:0}
+  .zine-viewer img{display:block;max-width:min(92vw,1100px);max-height:74dvh;object-fit:contain}
+  .zine-viewer .zv-ph{width:min(60vw,420px);aspect-ratio:.72;background:#ecebe6;color:#1a1a1a;display:flex;align-items:flex-end;
+    padding:24px;font-size:34px;font-weight:600;letter-spacing:-.02em}
+  .zine-viewer .zv-ph[hidden],.zine-viewer img[hidden]{display:none}
+  .zine-viewer figcaption{text-align:center;font-size:16px;line-height:1.4}
+  .zine-viewer .zv-pic{display:block;color:inherit;text-decoration:none;cursor:pointer}
+  .zine-viewer .zv-pic:not([href]){cursor:default}
+  .zv-nav .zv-open{margin-left:16px;padding:8px 16px;border-radius:999px;background:#fcfcfa;color:#1a1a1a;text-decoration:none}
+  .zv-nav .zv-open:hover{background:#fff}
+  .zv-nav .zv-open[hidden]{display:none}
+  .zine-viewer figcaption span{display:block;color:#a3a3a3}
+  .zv-nav{display:flex;align-items:center;gap:8px;font-size:15px;font-variant-numeric:tabular-nums}
+  .zv-nav button{border:0;background:none;color:inherit;font:inherit;padding:8px 12px;cursor:pointer;border-radius:999px}
+  .zv-nav button:hover{background:rgba(255,255,255,.1)}
+  .zv-nav .zv-n{color:#a3a3a3;min-width:5ch;text-align:center}
+  .zv-nav .zv-close{margin-left:8px;border:1px solid rgba(255,255,255,.4)}
+  .zine-viewer :focus-visible{outline:2px solid #fcfcfa;outline-offset:3px}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <!-- Studio name. Swap the text for a logo if you like: <img src="images/logo.svg" alt="Studio Name"> -->
+  <a class="wordmark" href="#" data-home>EYECANDY</a>
+  <nav aria-label="Sections">
+    <!-- Links are added automatically from the <section data-title="…"> blocks below.
+         For an extra link (Instagram, etc.) add an <li><a href="…">…</a></li> here. -->
+    <ul id="nav-links"></ul>
+  </nav>
+  <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav-links">Menu</button>
+</header>
+
+<!-- =======================================================================
+  BOOK PAGES
+
+  - Each <article class="page"> is one page, in reading order.
+  - The first page is the front cover, the last page is the back cover.
+    Right-hand pages are odd (1, 3, 5 …), left-hand pages are even (2, 4, 6 …).
+  - A <section data-title="…"> groups pages and becomes a link in the nav bar.
+    Rename, reorder, add or delete sections and pages freely.
+  - If the total number of pages is odd, a blank page is added before the back cover.
+  - Press G on the site to see page numbers and 64 px margins on every page.
+
+  WHAT YOU CAN PUT ON A PAGE
+    Blank      <article class="page"></article>
+    Image      <article class="page" data-image="images/07.jpg"></article>
+               add data-fit="contain" to show the whole image instead of filling the page
+    Spread     <article class="page" data-spread="images/spread-03.jpg"></article>
+               one image across two pages; put it on a LEFT-hand page,
+               it continues onto the next page by itself
+    Video      <article class="page" data-video="images/reel.mp4"></article>
+    Anything   write HTML inside the article, in px for an 850 × 1100 page:
+               <article class="page" style="background:#ff4d00">
+                 <h2 style="position:absolute; left:64px; top:64px; font-size:96px">Hello</h2>
+               </article>
+    Cover look add class "cover":  <article class="page cover"></article>
+
+    Page CSS   a <style> inside an article only affects that page:
+               <article class="page">
+                 <style> h2 { font-size:120px; color:#ff4d00 } </style>
+                 <h2>Only this page is orange</h2>
+               </article>
+
+  Links and buttons inside a page work as usual; clicking anywhere else turns the page.
+  Link to a page from anywhere with href="#page-7", or to a section with href="#work".
+
+  EDIT MODE  (Edit button at the bottom right, or press E)
+    Pick a page, then Add text / Add image / Page image / Background, or open Code
+    to edit that page's HTML directly. Drag text and images to move them.
+    Edits are kept in your browser only. Export > Download index.html gives you
+    the new file; replace this one with it and share it with the team.
+======================================================================== -->
+<div id="book-pages" hidden>
+
+  <!-- front cover -->
+  <article class="page cover" style="background:#fd0000;color:#F5F2EC">
+    <style>
+      .cv-season{position:absolute;left:64px;top:64px;margin:0;font-size:15px;letter-spacing:4px}
+      .cv-issue{position:absolute;right:64px;top:64px;margin:0;font-size:15px;letter-spacing:4px}
+      .cv-eyebrow{position:absolute;left:64px;top:380px;margin:0;font-size:16px;letter-spacing:5px;color:#191919}
+      .cv-h{position:absolute;left:56px;top:420px;margin:0;font-family:Georgia,serif;font-weight:400;font-size:260px;line-height:.78;letter-spacing:-12px;color:#F5F2EC}
+      .cv-h span{color:#191919}
+      .cv-msg{position:absolute;left:64px;top:900px;width:480px;margin:0;font-size:22px;line-height:1.6;color:#F5F2EC;opacity:.9}
+      .cv-foot{position:absolute;left:64px;right:64px;bottom:64px;display:flex;justify-content:space-between;border-top:1px solid rgba(245,242,236,.45);padding-top:18px;font-size:13px;letter-spacing:3px}
+    </style>
+    <leaf-fall></leaf-fall>
+    <p class="cv-season">AUTUMN EDITION / 2026</p>
+    <p class="cv-issue">ISSUE NO. 01</p>
+    <p class="cv-eyebrow">A VISUAL DESIGN STUDIO</p>
+    <h1 class="cv-h">Eye<br>candy<span>.</span></h1>
+    <p class="cv-msg">Fall merch zines from everyone in the studio, bound into one book.</p>
+    <div class="cv-foot"><span>DESIGN YOU CAN TAKE WITH YOU.</span><span>EYECANDY · NEW YORK · 2026</span></div>
+  </article>
+
+  <!-- Overview: the studio at a glance -->
+  <section id="overview" data-title="Overview">
+    <article class="page">
+      <style>
+        .ov-label{position:absolute;left:64px;top:64px;margin:0;font:600 15px/1 var(--font);letter-spacing:.2em;text-transform:uppercase;color:#fd0000}
+        .ov-h{position:absolute;left:58px;top:150px;margin:0;font-weight:800;font-size:132px;line-height:.9;letter-spacing:-.055em;color:#1a1a1a}
+        .ov-h span{color:#fd0000}
+        .ov-lead{position:absolute;left:64px;top:520px;width:640px;margin:0;font-size:30px;font-weight:500;line-height:1.35;letter-spacing:-.01em;color:#1a1a1a}
+        .ov-body{position:absolute;left:64px;top:735px;width:600px;margin:0;font-size:21px;line-height:1.55;color:#55514c}
+        .ov-stats{position:absolute;left:64px;right:64px;bottom:64px;display:flex;gap:40px;border-top:2px solid #1a1a1a;padding-top:20px}
+        .ov-stats div{flex:1}
+        .ov-stats b{display:block;font-size:56px;font-weight:800;letter-spacing:-.04em;line-height:1;color:#fd0000}
+        .ov-stats span{display:block;margin-top:8px;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#1a1a1a}
+      </style>
+      <p class="ov-label">Overview</p>
+      <h2 class="ov-h">Fall,<br><span>prototyped.</span></h2>
+      <p class="ov-lead">EyeCandy is a visual design studio in New York. This autumn, each of our designers took a brand and gave it a fall season.</p>
+      <p class="ov-body">Then we made the thing you could hold, wear or keep: a record, a coffee collection, a condom pack, a receipt, a merch line. Every prototype comes with its own zine, so you can open it and see how it works.</p>
+      <div class="ov-stats"><div><b>05</b><span>Designers</span></div><div><b>05</b><span>Fall prototypes</span></div><div><b>2026</b><span>Autumn edition</span></div></div>
+    </article>
+    <article class="page">
+      <style>
+        .ov-label{position:absolute;left:64px;top:64px;margin:0;font:600 15px/1 var(--font);letter-spacing:.2em;text-transform:uppercase;color:#fd0000}
+        .ov-list{position:absolute;left:64px;right:64px;top:120px;margin:0;padding:0;list-style:none}
+        .ov-list li{display:flex;gap:26px;align-items:baseline;border-top:2px solid #1a1a1a;padding:20px 0 22px}
+        .ov-list .n{flex:none;width:40px;font-size:18px;font-weight:600;color:#fd0000}
+        .ov-list .t{flex:1}
+        .ov-list b{display:block;font-size:40px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:#1a1a1a}
+        .ov-list em{display:block;margin-top:6px;font-style:normal;font-size:19px;line-height:1.4;color:#55514c}
+        .ov-list .by{flex:none;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;text-align:right;width:130px}
+        .ov-team{position:absolute;left:64px;right:64px;bottom:64px;border-top:2px solid #1a1a1a;padding-top:20px}
+        .ov-team h3{margin:0 0 14px;font:600 15px/1 var(--font);letter-spacing:.2em;text-transform:uppercase;color:#fd0000}
+        .ov-team p{margin:0;font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.25;color:#1a1a1a}
+      </style>
+      <p class="ov-label">The prototypes</p>
+      <ol class="ov-list">
+        <li><span class="n">01</span><span class="t"><b>Fall Wrapped</b><em>Spotify gets a season: a 12-inch record, Sweater Weather Sessions.</em></span><span class="by">Andrew Kim</span></li>
+        <li><span class="n">02</span><span class="t"><b>First Frost</b><em>Tim Hortons fall merch: a toque, a travel mug, a Timbits box and a cup sleeve.</em></span><span class="by">Andrew Kim</span></li>
+        <li><span class="n">03</span><span class="t"><b>Fall Edition</b><em>Condom packs in three fall shades, plus a limited-edition turkey.</em></span><span class="by">Nanda</span></li>
+        <li><span class="n">04</span><span class="t"><b>Autumn Receipt</b><em>A receipt for the season: small changes that add up.</em></span><span class="by">Member 1</span></li>
+        <li><span class="n">05</span><span class="t"><b>The Merch Edit</b><em>EyeCandy&rsquo;s own identity as paper things, apparel, stickers and objects.</em></span><span class="by">Ahanaa</span></li>
+      </ol>
+      <div class="ov-team"><h3>The designers</h3><p>Andrew Kim, Bo, Sahr, Nanda and Ahanaa.</p></div>
+    </article>
+  </section>
+
+  <!-- Zines: pages 4–5 are the moving strip (the two <zine-band> tags draw one strip across both pages),
+       then one spread per zine. The list of zines is window.ZINE_SLOTS at the top of this file. -->
+  <section id="zines" data-title="Zines">
+    <article class="page">
+      <h2 class="zines-title">Zines</h2>
+      <p class="zines-intro">Fall merch zines from everyone in the studio, on one loop. Click a zine to open it.</p>
+      <zine-band offset="0"></zine-band>
+      <p class="zines-hint">Hover to pause. Click a zine to open it.</p>
+    </article>
+    <article class="page">
+      <p class="zines-note">Autumn 2026.</p>
+      <zine-band offset="850"></zine-band>
+      <zine-count></zine-count>
+    </article>
+
+    <!-- zine: spotify -->
+    <article class="page zine-l" data-zine="spotify">
+      <img class="zine-img" src="zines/spotify/thumb.jpg" alt="">
+      <p class="zine-cap"><b class="zt">Fall Wrapped</b><span class="zb">Andrew Kim</span></p>
+    </article>
+    <article class="page zine-r" data-zine="spotify">
+      <img class="zine-img" src="zines/spotify/thumb.jpg" alt="">
+      <a class="zine-open" href="zines/spotify/index.html">Open zine</a>
+    </article>
+
+    <!-- zine: tim-hortons -->
+    <article class="page zine-l" data-zine="tim-hortons">
+      <img class="zine-img" src="zines/tim-hortons/thumb.jpg" alt="">
+      <p class="zine-cap"><b class="zt">First Frost</b><span class="zb">Andrew Kim</span></p>
+    </article>
+    <article class="page zine-r" data-zine="tim-hortons">
+      <img class="zine-img" src="zines/tim-hortons/thumb.jpg" alt="">
+      <a class="zine-open" href="zines/tim-hortons/index.html">Open zine</a>
+    </article>
+
+    <!-- zine: eyecandy -->
+    <article class="page zine-l" data-zine="eyecandy">
+      <img class="zine-img" src="zines/eyecandy/thumb.jpg" alt="">
+      <p class="zine-cap"><b class="zt">EYECANDY — The Merch Edit</b><span class="zb">Ahanaa Sarda</span></p>
+    </article>
+    <article class="page zine-r" data-zine="eyecandy">
+      <img class="zine-img" src="zines/eyecandy/thumb.jpg" alt="">
+      <a class="zine-open" href="zines/eyecandy/index.html">Open zine</a>
+    </article>
+
+    <!-- zine: trojan -->
+    <article class="page zine-l" data-zine="trojan">
+      <img class="zine-img" src="zines/trojan/thumb.jpg" alt="">
+      <p class="zine-cap"><b class="zt">Trojan: Fall Edition</b><span class="zb">Nanda</span></p>
+    </article>
+    <article class="page zine-r" data-zine="trojan">
+      <img class="zine-img" src="zines/trojan/thumb.jpg" alt="">
+      <a class="zine-open" href="zines/trojan/index.html">Open zine</a>
+    </article>
+
+    <!-- zine: autumn-receipt -->
+    <article class="page zine-l" data-zine="autumn-receipt">
+      <img class="zine-img" src="zines/autumn-receipt/thumb.jpg" alt="">
+      <p class="zine-cap"><b class="zt">Autumn Receipt</b><span class="zb">Member 1</span></p>
+    </article>
+    <article class="page zine-r" data-zine="autumn-receipt">
+      <img class="zine-img" src="zines/autumn-receipt/thumb.jpg" alt="">
+      <a class="zine-open" href="zines/autumn-receipt/index.html">Open zine</a>
+    </article>
+  </section>
+
+  <!-- Shop and consultations -->
+  <section id="shop" data-title="Shop">
+    <article class="page" style="background:#F5F2EC;color:#191919">
+      <style>
+        .shop-kicker{position:absolute;left:64px;top:62px;margin:0;color:#F13B27;font-size:14px;letter-spacing:3px}
+        .shop-title{position:absolute;left:64px;top:150px;width:320px;margin:0;font:400 82px/.96 Georgia,serif;letter-spacing:-3px}
+        .shop-copy{position:absolute;left:64px;top:470px;width:320px;margin:0;font-size:19px;line-height:1.5;color:#55514C}
+        .shop-image{position:absolute;right:64px;top:190px;width:350px;height:420px;object-fit:cover}
+        .shop-product{position:absolute;left:64px;right:64px;bottom:105px;border-top:1px solid #191919;padding-top:20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+        .shop-product b{font:600 26px/1.1 Arial,sans-serif}
+        .shop-product span{display:block;margin-top:7px;font-size:15px;color:#55514C}
+        .shop-button{flex:none;border:0;background:#F13B27;color:#fff;padding:15px 21px;border-radius:999px;font:600 15px Arial,sans-serif;cursor:pointer}
+        .shop-button:hover{background:#191919}
+        .shop-count{position:absolute;right:64px;top:62px;border:1px solid #191919;border-radius:999px;padding:9px 15px;font-size:13px}
+      </style>
+      <p class="shop-kicker">THE EYECANDY SHOP / AUTUMN 2026</p>
+      <span class="shop-count" id="cart-count">BAG (0)</span>
+      <h2 class="shop-title">Design you<br>can take<br>with you.</h2>
+      <p class="shop-copy">A little piece of EYECANDY. Explore our studio merchandise, made to bring the identity off the page and into everyday life.</p>
+      <img class="shop-image" src="zines/eyecandy/stationery.jpg" alt="EYECANDY stationery and merchandise mockups">
+      <div class="shop-product">
+        <div><b>EYECANDY Merch Set</b><span>Stationery, stickers and studio objects</span></div>
+        <button class="shop-button" type="button" data-add-to-cart data-no-turn>Add to bag +</button>
+      </div>
+    </article>
+    <article class="page" style="background:#191919;color:#F5F2EC">
+      <style>
+        .consult-kicker{position:absolute;left:64px;top:62px;margin:0;color:#F13B27;font-size:14px;letter-spacing:3px}
+        .consult-title{position:absolute;left:64px;top:165px;width:300px;margin:0;font:400 88px/.94 Georgia,serif;letter-spacing:-3px}
+        .consult-copy{position:absolute;left:64px;top:430px;width:300px;margin:0;font-size:19px;line-height:1.5;color:#D8D2C8}
+        .consult-button{position:absolute;left:64px;top:700px;display:inline-block;background:#F13B27;color:#fff;text-decoration:none;padding:17px 24px;border-radius:999px;font-size:16px;font-weight:600}
+        .consult-button:hover{background:#F5F2EC;color:#191919}
+        .consult-foot{position:absolute;left:64px;right:64px;bottom:64px;border-top:1px solid #777;padding-top:18px;display:flex;justify-content:space-between;font-size:13px;letter-spacing:3px;color:#F5F2EC}
+        .consult-thumbs{position:absolute;right:64px;top:245px;width:350px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .consult-thumbs img{width:100%;height:145px;object-fit:cover;background:#eee}
+        .consult-thumbs img:first-child{grid-column:span 2;height:210px}
+      </style>
+      <p class="consult-kicker">LET'S MAKE SOMETHING</p>
+      <h2 class="consult-title">Have an<br>idea?</h2>
+      <p class="consult-copy">From visual identities and packaging to objects, campaigns and creative collaborations, we'd love to hear what you're imagining.</p>
+      <a class="consult-button" href="mailto:sayhello@eyecandy.com?subject=EYECANDY%20Design%20Consultation" data-no-turn>Book a consultation ↗</a>
+      <div class="consult-thumbs">
+        <img src="zines/spotify/thumb.jpg" alt="Spotify seasonal mockup">
+        <img src="zines/tim-hortons/thumb.jpg" alt="Tim Hortons seasonal mockup">
+        <img src="zines/trojan/thumb.jpg" alt="Trojan seasonal mockup">
+      </div>
+      <div class="consult-foot"><span>EYECANDY STUDIO</span><span>NEW YORK · 2026</span></div>
+    </article>
+  </section>
+
+  <!-- Contact: address, email, social -->
+  <section id="contact" data-title="Contact">
+    <article class="page" style="background:#fd0000;color:#fff">
+      <style>
+        .ct-tag{position:absolute;right:64px;top:70px;margin:0;font-size:22px;font-weight:600}
+        .ct-eye{position:absolute;left:64px;top:62px;width:150px;height:auto}
+        .ct-h{position:absolute;left:52px;top:210px;margin:0;font-size:300px;font-weight:800;line-height:.8;letter-spacing:-.06em}
+        .ct-p{position:absolute;left:64px;top:760px;width:560px;margin:0;font-size:28px;line-height:1.35}
+        a.ct-mail{position:absolute;left:64px;bottom:64px;display:inline-block;background:#fff;color:#fd0000;border-radius:999px;
+          padding:18px 36px;font-size:24px;font-weight:600;text-decoration:none;transition:transform .2s}
+        .page .ct-mail:hover{transform:translateY(-4px)}
+      </style>
+      <img class="ct-eye" src="images/eyecandy/eye-white.svg" alt="">
+      <p class="ct-tag">Contact</p>
+      <h2 class="ct-h">Say<br>hi.</h2>
+      <p class="ct-p">Questions, collabs, or want a zine? We would love to hear from you.</p>
+      <a class="ct-mail" href="mailto:sayhello@eyecandy.com">sayhello@eyecandy.com</a>
+    </article>
+
+    <article class="page" style="background:#fcfcfa;color:#1a1a1a">
+      <style>
+        .ct-lab{position:absolute;left:64px;margin:0;font-size:16px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#fd0000}
+        .ct-team{position:absolute;left:64px;right:64px;top:116px;margin:0;padding:0;list-style:none}
+        .ct-team li{display:flex;align-items:center;gap:22px;border-top:2px solid #1a1a1a;padding:14px 0 16px}
+        .ct-team .ct-ph{flex:none;width:84px;height:84px;border-radius:50%;object-fit:cover;background:#ecebe6}
+        .ct-team b{flex:1}
+        .ct-team b{font-size:40px;font-weight:800;letter-spacing:-.03em}
+        .ct-team span{font-size:20px;color:#8b8b8b}
+        .ct-team span a{color:inherit;text-decoration:none}
+        .ct-team span a:hover{color:#fd0000}
+        .ct-find{position:absolute;left:64px;right:64px;top:790px;margin:0;padding:0;list-style:none}
+        .ct-find li{display:flex;gap:28px;border-top:2px solid #fd0000;padding:16px 0;font-size:22px}
+        .ct-find li span{width:130px;color:#8b8b8b}
+        .ct-find a{color:#1a1a1a;text-decoration:none;border-bottom:1.5px solid #fd0000}
+        .ct-find a:hover{color:#fd0000}
+      </style>
+      <p class="ct-lab" style="top:64px">The team</p>
+      <ul class="ct-team">
+        <li><img class="ct-ph" src="images/team/kim.jpg" alt="Andrew Kim"><b>Andrew Kim</b><span><a href="mailto:kims352@newschool.edu">kims352@newschool.edu</a></span></li>
+        <li><img class="ct-ph" src="images/team/nanda.jpg" alt="Bo"><b>Bo</b><span><a href="mailto:yanb120@newschool.edu">yanb120@newschool.edu</a></span></li>
+        <li><img class="ct-ph" src="images/team/sahr.jpg" alt="Sahr"><b>Sahr</b></li>
+        <li><img class="ct-ph" src="images/team/ahanaa.jpg" alt="Nanda"><b>Nanda</b><span><a href="mailto:silvf389@newschool.edu">silvf389@newschool.edu</a></span></li>
+        <li><img class="ct-ph" src="images/team/bo.jpg" alt="Ahanaa"><b>Ahanaa</b><span><a href="mailto:Ahanaasarda@gmail.com">Ahanaasarda@gmail.com</a></span></li>
+      </ul>
+      <p class="ct-lab" style="top:744px">Find us</p>
+      <ul class="ct-find">
+        <li><span>Email</span><a href="mailto:sayhello@eyecandy.com">sayhello@eyecandy.com</a></li>
+        <li><span>Instagram</span><a href="https://instagram.com/eye.candy" target="_blank" rel="noopener">@eye.candy</a></li>
+        <li><span>Studio</span>New York, USA</li>
+      </ul>
+    </article>
+  </section>
+
+  <!-- back cover -->
+  <article class="page cover" style="background:#F5F2EC;color:#191919">
+    <style>
+      .ty-season{position:absolute;left:64px;top:64px;margin:0;font-size:15px;letter-spacing:4px;color:#F13B27}
+      .ty-eyebrow{position:absolute;left:64px;top:380px;margin:0;font-size:16px;letter-spacing:5px;color:#F13B27}
+      .ty-h{position:absolute;left:56px;top:420px;margin:0;font-family:Georgia,serif;font-weight:400;font-size:230px;line-height:.78;letter-spacing:-10px;color:#191919}
+      .ty-h span{color:#F13B27}
+      .ty-msg{position:absolute;left:64px;top:830px;width:480px;margin:0;font-size:22px;line-height:1.6;color:#55514C}
+      .ty-foot{position:absolute;left:64px;right:64px;bottom:64px;display:flex;justify-content:space-between;border-top:1px solid #D9D5CC;padding-top:18px;font-size:13px;letter-spacing:3px;color:#F13B27}
+    </style>
+    <leaf-fall></leaf-fall>
+    <p class="ty-season">AUTUMN EDITION / 2026</p>
+    <p class="ty-eyebrow">A NOTE FROM THE STUDIO</p>
+    <h2 class="ty-h">Thank<br>you<span>.</span></h2>
+    <p class="ty-msg">For being part of our creative journey. Here's to the ideas we've shared, the things we've made, and everything still waiting to be created.</p>
+    <div class="ty-foot"><span>STAY CURIOUS. KEEP CREATING.</span><span>EYECANDY · 2026</span></div>
+  </article>
+
+</div>
+
+<script src="book.js"></script>
+<!-- Zines strip on pages 4–5 (moving photos). Must stay after book.js. -->
+<script>
+/* =====================================================================
+   ZINE BAND  —  pages 4–5
+   A strip of zine photos that loops across the spread, over the spine.
+
+   The strip shows zines/<slot>/thumb.jpg for every entry in window.ZINE_SLOTS.
+   See HOW-TO-ADD-YOUR-ZINE.md.
+
+   Tags used in index.html:
+     <zine-band offset="0">    the strip on the left page (page 4)
+     <zine-band offset="850">  the same strip on the right page (page 5),
+                               shifted by one page width so it reads as one strip
+     <zine-count>              "6 zines"
+
+   Everything is drawn inside a shadow root, so Edit mode / Export
+   in book.js never copies the photos into index.html.
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  const PAGE_W = (window.BOOK && window.BOOK.pageWidth) || 850;
+  const SPEED = 60;          // px per second (in page px)
+  const IMG_H = 380;         // photo height in page px
+  const GAP = 28;            // space between zines
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- 1. the list of zines ---------- */
+  // one entry per folder in zines/ (window.ZINE_SLOTS at the top of this file)
+  let list = (window.ZINE_SLOTS || []).map(z => ({
+    slot: z.slot, title: z.title || 'Zine', by: z.by || '',
+    src: 'zines/' + z.slot + '/thumb.jpg', link: 'zines/' + z.slot + '/index.html'
+  }));
+  const listeners = new Set();
+  const changed = () => listeners.forEach(fn => fn());
+
+  // caption = the zine page's own <title> and <meta name="author">, so each person only edits their own folder
+  async function readTitles() {
+    await Promise.all(list.map(async z => {
+      try {
+        const res = await fetch(z.link, { cache: 'no-cache' });
+        if (!res.ok) return;
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const t = doc.querySelector('title'), a = doc.querySelector('meta[name="author"]');
+        if (t && t.textContent.trim()) z.title = t.textContent.trim();
+        if (a && a.content.trim()) z.by = a.content.trim();
+      } catch (e) { /* opened from the computer: keep the names in ZINE_SLOTS */ }
+    }));
+    list = list.slice();
+    changed();
+    fillPages();
+  }
+  // captions on each zine's spread in the book
+  function fillPages() {
+    document.querySelectorAll('.zine-l[data-zine]').forEach(p => {
+      const z = list.find(x => x.slot === p.dataset.zine);
+      if (!z) return;
+      p.querySelector('.zt').textContent = z.title;
+      p.querySelector('.zb').textContent = z.by;
+      p.querySelectorAll('.zine-img').forEach(im => { im.alt = z.title + ' by ' + z.by; });
+    });
+  }
+
+  /* ---------- 2. shared clock so both pages move together ---------- */
+  let pos = 0, last = performance.now(), paused = 0, setW = 1;
+  const bands = new Set();
+  function tick(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const visible = [...bands].some(b => b.isVisible());
+    if (!reduce && !paused && visible) pos = (pos + dt * SPEED) % setW;
+    bands.forEach(b => b.place(pos));
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  /* ---------- 3. <zine-band> ---------- */
+  const bandCSS = `
+    :host{display:block;position:absolute;left:0;width:${PAGE_W}px;height:${IMG_H + 90}px;overflow:hidden}
+    .track{position:absolute;top:0;left:0;display:flex;gap:${GAP}px;will-change:transform}
+    figure{margin:0;flex:none;cursor:zoom-in}
+    .ph{display:block;height:${IMG_H}px;background:#ecebe6;outline:.5px solid rgba(0,0,0,.08)}
+    img.ph{object-fit:cover}
+    div.ph{display:flex;align-items:flex-end;padding:22px;box-sizing:border-box;
+      font:600 30px/1 var(--font);letter-spacing:-.02em;color:#1a1a1a}
+    figcaption{padding-top:14px;font:15px/1.35 var(--font);color:var(--ink,#1a1a1a);white-space:nowrap}
+    figcaption span{display:block;color:var(--mute,#8b8b8b)}
+    figure:focus-visible{outline:2px solid #1a1a1a;outline-offset:4px}`;
+
+  class ZineBand extends HTMLElement {
+    connectedCallback() {
+      if (this._ready) return;
+      this._ready = true;
+      this.setAttribute('data-no-turn', '');   // clicks here open a zine instead of turning the page
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = '<style>' + bandCSS + '</style><div class="track"></div>';
+      this.track = root.querySelector('.track');
+      this.offset = +this.getAttribute('offset') || 0;
+
+      this.addEventListener('pointerenter', () => paused++);
+      this.addEventListener('pointerleave', () => { paused = Math.max(0, paused - 1); });
+      this.track.addEventListener('click', e => {
+        const f = e.target.closest('figure[data-i]');
+        if (f) openViewer(+f.dataset.i);
+      });
+      this.track.addEventListener('keydown', e => {
+        const f = e.target.closest('figure[data-i]');
+        if (f && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); openViewer(+f.dataset.i); }
+      });
+
+      this.render = this.render.bind(this);
+      listeners.add(this.render);
+      bands.add(this);
+      this.render();
+    }
+    disconnectedCallback() { listeners.delete(this.render); bands.delete(this); }
+
+    isVisible() { const f = this.closest('.face'); return !f || !f.inert; }
+
+    async render() {
+      const now = list;
+      const PH_W = Math.round(IMG_H * .72);
+      if (!now.length) { this.track.innerHTML = '<figure><div class="ph" style="width:' + PH_W + 'px">No zines yet</div></figure>'; setW = PH_W + GAP; return; }
+      // work out each photo's width ourselves (height is fixed), so the loop length is exact
+      const widths = await Promise.all(now.map(z => z.src ? photoWidth(z.src, PH_W) : PH_W));
+      if (now !== list) return;                  // the list changed while we waited
+      const one = now.map((z, i) => {
+        const pic = z.src
+          ? `<img class="ph" src="${esc(z.src)}" alt="" draggable="false" style="width:${widths[i]}px">`
+          : `<div class="ph" style="width:${widths[i]}px">${esc(z.title || 'Zine')}</div>`;
+        return `<figure data-i="${i}" role="button" style="width:${widths[i]}px">${pic}` +
+               `<figcaption>${esc(z.title || 'Untitled')}<span>${esc(z.by || '')}</span></figcaption></figure>`;
+      }).join('');
+
+      setW = widths.reduce((a, w) => a + w + GAP, 0);   // length of one full set
+      // repeat the set until it covers both pages plus one more, so the loop never shows a gap
+      const copies = Math.ceil((PAGE_W * 2 + setW) / setW) + 1;
+      this.track.innerHTML = one.repeat(copies);
+      this.track.querySelectorAll('figure').forEach((f, k) => {
+        f.tabIndex = (this.offset === 0 && k < now.length) ? 0 : -1;   // only the first set on page 4 is tabbable
+        if (k >= now.length) f.setAttribute('aria-hidden', 'true');
+      });
+    }
+
+    // page 4 shows the strip from x = 0, page 5 from x = 850, so it reads as one strip over the spine
+    place(p) { this.track.style.transform = 'translateX(' + (-((p + this.offset) % setW)) + 'px)'; }
+  }
+
+  /* ---------- 4. <zine-count> ---------- */
+  class ZineCount extends HTMLElement {
+    connectedCallback() {
+      if (this._ready) return;
+      this._ready = true;
+      const root = this.attachShadow({ mode: 'open' });
+      const out = document.createElement('span');
+      root.append(out);
+      this.render = () => { const n = list.length; out.textContent = n + (n === 1 ? ' zine' : ' zines'); };
+      listeners.add(this.render);
+      this.render();
+    }
+    disconnectedCallback() { listeners.delete(this.render); }
+  }
+
+  /* ---------- 5. viewer ---------- */
+  let viewer = null, vi = 0;
+  function buildViewer() {
+    viewer = document.createElement('dialog');
+    viewer.className = 'zine-viewer';
+    viewer.innerHTML =
+      '<figure><a class="zv-pic"><img alt=""><div class="zv-ph"></div></a><figcaption><b></b><span></span></figcaption></figure>' +
+      '<div class="zv-nav"><button type="button" data-d="-1">Previous</button>' +
+      '<span class="zv-n"></span>' +
+      '<button type="button" data-d="1">Next</button>' +
+      '<a class="zv-open">Open zine</a>' +
+      '<button type="button" class="zv-close">Close</button></div>';
+    document.body.append(viewer);
+    viewer.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (b && b.dataset.d) show(vi + +b.dataset.d);
+      else if (b && b.classList.contains('zv-close')) viewer.close();
+      else if (e.target.closest('a[href^="#"]')) viewer.close();   // a page in this book: close, then the book turns there
+      else if (e.target === viewer) viewer.close();      // click the dark area
+    });
+    // keep the book from turning while the viewer is open
+    viewer.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); show(vi + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); show(vi - 1); }
+      if (e.key !== 'Escape' && e.key !== 'Tab') e.stopPropagation();
+    });
+    viewer.addEventListener('close', () => { document.documentElement.style.overflow = ''; });
+  }
+  function show(i) {
+    if (!list.length) return;
+    vi = (i + list.length) % list.length;
+    const z = list[vi];
+    const img = viewer.querySelector('img'), ph = viewer.querySelector('.zv-ph');
+    img.hidden = !z.src; ph.hidden = !!z.src;
+    if (z.src) { img.src = z.src; img.alt = z.title || ''; } else ph.textContent = z.title || 'Zine';
+    viewer.querySelector('figcaption b').textContent = z.title || 'Untitled';
+    viewer.querySelector('figcaption span').textContent = z.by || '';
+    viewer.querySelector('.zv-n').textContent = (vi + 1) + ' / ' + list.length;
+    // link to this person's zine page (photo and button both go there)
+    const link = z.link || '';
+    const outside = /^https?:/.test(link);   // other people's sites open in a new tab
+    viewer.querySelectorAll('.zv-pic, .zv-open').forEach(a => {
+      if (link) { a.href = link; } else a.removeAttribute('href');
+      if (outside) { a.target = '_blank'; a.rel = 'noopener'; } else { a.removeAttribute('target'); a.removeAttribute('rel'); }
+    });
+    viewer.querySelector('.zv-open').hidden = !link;
+  }
+  function openViewer(i) {
+    if (!viewer) buildViewer();
+    show(i);
+    document.documentElement.style.overflow = 'hidden';   // stop the book from turning underneath
+    viewer.showModal();
+  }
+
+  /* ---------- helpers ---------- */
+  // width of a photo when it is IMG_H tall (falls back to a zine-page shape if it fails to load)
+  const widthCache = new Map();
+  function photoWidth(src, fallback) {
+    if (widthCache.has(src)) return widthCache.get(src);
+    const p = new Promise(res => {
+      const im = new Image();
+      im.onload = () => res(Math.round(IMG_H * im.naturalWidth / im.naturalHeight) || fallback);
+      im.onerror = () => res(fallback);
+      im.src = src;
+    });
+    widthCache.set(src, p);
+    return p;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  customElements.define('zine-band', ZineBand);
+  customElements.define('zine-count', ZineCount);
+  readTitles();
+})();
+</script>
+
+<!-- Falling leaves on the front and back cover. Drawn inside a shadow root, only while that page is open. -->
+<script>
+(function () {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css = `
+    :host{display:block;position:absolute;inset:0;overflow:hidden;pointer-events:none}
+    .leaf{position:absolute;top:-60px;opacity:0;animation:fall linear forwards}
+    @keyframes fall{
+      0%{transform:translate(0,-50px) rotate(0deg);opacity:0}
+      10%{opacity:.9}
+      50%{transform:translate(60px,550px) rotate(180deg)}
+      100%{transform:translate(-40px,1160px) rotate(360deg);opacity:0}
+    }`;
+  const leaves = ['🍁', '🍂', '🍁', '🍂'];
+  class LeafFall extends HTMLElement {
+    connectedCallback() {
+      if (this._ready) return;
+      this._ready = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = '<style>' + css + '</style>';
+      if (reduce) return;
+      this._t = setInterval(() => {
+        const f = this.closest('.face');
+        if (document.hidden || (f && f.inert)) return;   // only fall on the page you are looking at
+        const l = document.createElement('span');
+        l.className = 'leaf';
+        l.textContent = leaves[Math.floor(Math.random() * leaves.length)];
+        l.style.left = Math.random() * 100 + '%';
+        l.style.fontSize = (24 + Math.random() * 26) + 'px';
+        l.style.animationDuration = (3 + Math.random() * 3) + 's';
+        l.addEventListener('animationend', () => l.remove());
+        root.append(l);
+      }, 180);
+    }
+    disconnectedCallback() { clearInterval(this._t); }
+  }
+  customElements.define('leaf-fall', LeafFall);
+})();
+</script>
+
+<script>
+(function () {
+  const addButton = document.querySelector('[data-add-to-cart]');
+  const count = document.getElementById('cart-count');
+  if (!addButton || !count) return;
+  let items = 0;
+  addButton.addEventListener('click', function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    items += 1;
+    count.textContent = 'BAG (' + items + ')';
+    addButton.textContent = 'Added ✓';
+    addButton.style.background = '#191919';
+  });
+  count.addEventListener('click', function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!items) {
+      count.textContent = 'BAG (0) — EMPTY';
+      return;
+    }
+    const subject = encodeURIComponent('EYECANDY merch enquiry');
+    const body = encodeURIComponent('Hi EYECANDY, I would like to enquire about ' + items + ' EYECANDY Merch Set(s).');
+    window.location.href = 'mailto:sayhello@eyecandy.com?subject=' + subject + '&body=' + body;
+  });
+  count.style.cursor = 'pointer';
+  count.title = 'Click to enquire about your bag';
+})();
+</script>
+\n</body>
+</html>
